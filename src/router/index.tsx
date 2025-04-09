@@ -20,7 +20,7 @@ import {
 
 const Stack = createNativeStackNavigator();
 
-const index = () => {
+const Router = () => {
   return (
     <Stack.Navigator>
       <Stack.Screen
@@ -102,4 +102,4 @@ const index = () => {
   );
 };
 
-export default index;
+export default Router;

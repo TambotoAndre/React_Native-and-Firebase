@@ -1,5 +1,6 @@
-import React from 'react';
+import React, {useEffect, useState} from 'react';
 import {
+  Alert,
   Image,
   ScrollView,
   StyleSheet,
@@ -8,32 +9,83 @@ import {
   View,
 } from 'react-native';
 import {Gap} from '../../components';
-import {BackButton, LogoutButton} from '../../assets/icon';
+import {auth} from '../../firebase';
+import {signOut} from 'firebase/auth';
+import {LogoutButton} from '../../assets/icon';
 import {EditProfil} from '../../assets/icon';
+import {db} from '../../firebase';
+import {getDoc, doc} from 'firebase/firestore';
+
 const Profil = ({navigation}) => {
+  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      const user = auth.currentUser;
+      if (user) {
+        setEmail(user.email || '');
+
+        try {
+          const userDoc = await getDoc(doc(db, 'users', user.uid));
+          if (userDoc.exists()) {
+            const data = userDoc.data();
+            setUsername(data.username || '');
+            setPhoneNumber(data.phoneNumber || '');
+          }
+        } catch (error) {
+          console.log('Error fetching user data from Firestore:', error);
+        }
+      }
+    };
+
+    fetchUserData();
+  }, []);
+
+  const handleLogout = () => {
+    Alert.alert('Konfirmasi', 'Yakin ingin keluar dari akun?', [
+      {text: 'Batal', style: 'cancel'},
+      {
+        text: 'Keluar',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await signOut(auth);
+            navigation.replace('SignIn');
+          } catch (error) {
+            Alert.alert('Logout Gagal', error.message);
+          }
+        },
+      },
+    ]);
+  };
+
   return (
     <ScrollView style={styles.container}>
       <View style={styles.HeadersContainer}>
-        <LogoutButton
-          style={styles.LogoutButton}
-          onPress={() => navigation.navigate('SignIn')}
-        />
+        <TouchableOpacity style={styles.LogoutButton} onPress={handleLogout}>
+          <LogoutButton />
+        </TouchableOpacity>
+
         <View style={styles.imageContainer}>
-          <Image style={styles.image} />
+          {/* <Image style={styles.image} /> */}
         </View>
+
         <Gap height={8} />
         <Text style={styles.TextHeader}>Aplikasi Transaksi Sampah</Text>
-        <Text style={styles.TextHeader2}>ATS@gmail.com</Text>
-        <Text style={styles.TextHeader2}>08131938475</Text>
+        <Text style={styles.TextHeader2}>{username}</Text>
+        <Text style={styles.TextHeader2}>{email}</Text>
+        <Text style={styles.TextHeader2}>📞 Nomor: {phoneNumber}</Text>
       </View>
+
       <Gap height={72} />
       <Text style={styles.akunTxt}>Akun</Text>
       <Gap height={13} />
       <TouchableOpacity
         style={styles.editProfil}
         activeOpacity={0.7}
-        onPress={() => navigation.navigate('ProfilEdit')} // Ganti dengan nama halaman tujuan
-      >
+        onPress={() => navigation.navigate('ProfilEdit')}>
         <EditProfil />
       </TouchableOpacity>
     </ScrollView>
@@ -62,6 +114,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins-Regular',
     textAlign: 'center',
   },
+
   LogoutButton: {
     marginLeft: 337,
     marginRight: 35,
@@ -89,5 +142,4 @@ const styles = StyleSheet.create({
     borderBottomColor: '#16423C',
     borderRadius: 8,
   },
-  backButton: {},
 });

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useEffect, useState} from 'react';
 import {
   ScrollView,
   StyleSheet,
@@ -20,13 +20,38 @@ import BP3 from '../../assets/icon/NavPosting.svg';
 import BP4 from '../../assets/icon/NavStatus.svg';
 import BP5 from '../../assets/icon/NavProfil.svg';
 
+import {auth, db} from '../../firebase';
+import {doc, getDoc} from 'firebase/firestore';
+
 const Home = ({navigation}) => {
+  const [username, setUsername] = useState('');
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      const user = auth.currentUser;
+      if (user) {
+        try {
+          const userDocRef = doc(db, 'users', user.uid);
+          const userDocSnap = await getDoc(userDocRef);
+          if (userDocSnap.exists()) {
+            const data = userDocSnap.data();
+            setUsername(data.username || '');
+          }
+        } catch (error) {
+          console.log('Error fetching user data:', error);
+        }
+      }
+    };
+
+    fetchUserData();
+  }, []);
+
   return (
     <View style={styles.container}>
       <ScrollView>
         <View style={styles.containPage}>
           <View style={styles.greeting}>
-            <Text style={styles.text1}>Hi User,</Text>
+            <Text style={styles.text1}>Hi {username || 'User'},</Text>
             <Text style={styles.text2}>Welcome to ATS</Text>
           </View>
           <TouchableOpacity

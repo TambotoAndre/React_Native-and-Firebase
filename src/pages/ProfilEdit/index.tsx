@@ -1,103 +1,130 @@
-import React from 'react';
+import React, {useState, useEffect} from 'react';
 import {
-  Image,
   ScrollView,
   StyleSheet,
   Text,
-  TouchableOpacity,
+  TextInput,
+  Alert,
   View,
 } from 'react-native';
-import {Button, Gap, TextInput} from '../../components';
-import {LogoutButton} from '../../assets/icon';
-import {EditProfil} from '../../assets/icon';
-const ProfilEdit = ({navigation}) => {
+import {Gap, Button} from '../../components';
+import {auth} from '../../firebase';
+import {
+  EmailAuthProvider,
+  reauthenticateWithCredential,
+  updatePassword,
+} from 'firebase/auth';
+
+const ChangePasswordScreen = ({navigation}) => {
+  const [email, setEmail] = useState('');
+  const [oldPassword, setOldPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+
+  useEffect(() => {
+    const user = auth.currentUser;
+    if (user && user.email) {
+      setEmail(user.email);
+    }
+  }, []);
+
+  const handleChangePassword = async () => {
+    const user = auth.currentUser;
+
+    if (!user || !user.email) {
+      Alert.alert('Error', 'User tidak ditemukan.');
+      return;
+    }
+
+    const credential = EmailAuthProvider.credential(user.email, oldPassword);
+
+    try {
+      await reauthenticateWithCredential(user, credential);
+      await updatePassword(user, newPassword);
+      Alert.alert('Sukses', 'Password berhasil diubah.');
+      navigation.goBack();
+    } catch (error) {
+      console.log(error);
+      Alert.alert(
+        'Gagal',
+        'Gagal mengubah password. Cek kembali password lama.',
+      );
+    }
+  };
+
   return (
     <ScrollView style={styles.container}>
-      <View style={styles.HeadersContainer}>
-        <LogoutButton style={styles.LogoutButton} />
-        <View style={styles.imageContainer}>
-          <Image style={styles.image} />
-        </View>
-        <Gap height={8} />
-        <Text style={styles.TextHeader}>Aplikasi Transaksi Sampah</Text>
-        <Text style={styles.TextHeader2}>ATS@gmail.com</Text>
-        <Text style={styles.TextHeader2}>08131938475</Text>
+      <View style={styles.headerContainer}>
+        <Gap height={120} />
+        <Text style={styles.headerText}>Ubah Password</Text>
+        <Text style={styles.subHeaderText}>{email}</Text>
       </View>
-      <Gap height={49} />
-      <Text style={styles.TextInputTop}>Userdname</Text>
-      <TextInput placeholder="Masukan Username Anda" />
-      <Gap height={12} />
-      <Text style={styles.TextInputTop}>Email</Text>
-      <TextInput placeholder="Masukan Email Anda" />
-      <Gap height={12} />
-      <Text style={styles.TextInputTop}>Phon Number</Text>
-      <TextInput placeholder="Masukan No HP Anda" />
-      <Gap height={140} />
+
+      <Gap height={40} />
+      <Text style={styles.label}>Password Lama</Text>
+      <TextInput
+        placeholder="Masukkan Password Lama"
+        style={styles.input}
+        secureTextEntry
+        value={oldPassword}
+        onChangeText={setOldPassword}
+      />
+      <Gap height={20} />
+      <Text style={styles.label}>Password Baru</Text>
+      <TextInput
+        placeholder="Masukkan Password Baru"
+        style={styles.input}
+        secureTextEntry
+        value={newPassword}
+        onChangeText={setNewPassword}
+      />
+      <Gap height={40} />
       <Button
         label="Simpan Perubahan"
         textColor="#E9EFEC"
-        onSubmit={() => navigation.navigate('Profil')}
-        type={undefined}
-        icon={undefined}
+        onSubmit={handleChangePassword}
       />
+      <Gap height={20} />
     </ScrollView>
   );
 };
 
-export default ProfilEdit;
+export default ChangePasswordScreen;
 
 const styles = StyleSheet.create({
   container: {
     backgroundColor: '#E9EFEC',
+    flex: 1,
   },
-  HeadersContainer: {
+  headerContainer: {
     backgroundColor: '#16423C',
     height: 260,
+    paddingHorizontal: 32,
   },
-  TextHeader: {
+  headerText: {
     color: '#E9EFEC',
-    fontSize: 22,
-    fontFamily: 'Poppins-SemiBold',
-    paddingHorizontal: 43,
+    fontSize: 29,
+    fontFamily: 'Poppins-Bold',
   },
-  TextHeader2: {
+  subHeaderText: {
     color: '#E9EFEC',
     fontSize: 14,
     fontFamily: 'Poppins-Regular',
-    textAlign: 'center',
+    marginTop: 8,
   },
-  LogoutButton: {
-    color: '#E9EFEC',
-    marginLeft: 337,
-    marginRight: 35,
-    marginTop: 35,
-  },
-  image: {
-    width: 80,
-    height: 80,
-    borderRadius: 50,
-    backgroundColor: '#D5F5EA',
-  },
-  imageContainer: {
-    alignItems: 'center',
-    marginTop: 21,
-  },
-  akunTxt: {
-    color: '#16423C',
-    fontFamily: 'Poppins-Bold',
-    fontSize: 15,
-    paddingLeft: 50,
-  },
-  editProfil: {
-    marginHorizontal: 35,
-    borderBottomWidth: 2,
-    borderBottomColor: '#16423C',
-    borderRadius: 8,
-  },
-  TextInputTop: {
+  label: {
     color: '#0C120E',
     fontSize: 16,
     fontFamily: 'Poppins-Regular',
     paddingLeft: 42,
+  },
+  input: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
+    padding: 12,
+    marginHorizontal: 32,
+    fontFamily: 'Poppins-Regular',
+    marginTop: 8,
+    borderColor: '#A9A9A9',
+    borderWidth: 1,
   },
 });

@@ -1,14 +1,38 @@
-import React from 'react';
+import React, {useState} from 'react';
 import {
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
+  TextInput,
+  Alert,
 } from 'react-native';
-import {Button, Gap, PageHeader, TextInput} from '../../components';
+import {Button, Gap} from '../../components';
+import {auth} from '../../firebase';
+import {signInWithEmailAndPassword} from 'firebase/auth';
 
 const SignIn = ({navigation}) => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+
+  const handleLogin = () => {
+    if (!email || !password) {
+      Alert.alert('Error', 'Email dan password wajib diisi');
+      return;
+    }
+
+    signInWithEmailAndPassword(auth, email, password)
+      .then(userCredential => {
+        const user = userCredential.user;
+        console.log('Login berhasil:', user.email);
+        navigation.replace('Home');
+      })
+      .catch(error => {
+        Alert.alert('Login Gagal', error.message);
+      });
+  };
+
   return (
     <ScrollView style={styles.container}>
       <View style={styles.HeadersContainer}>
@@ -16,23 +40,30 @@ const SignIn = ({navigation}) => {
         <Text style={styles.TextHeader}>Masuk ke akun Anda</Text>
         <Text style={styles.TextHeader2}>Log in to your Account</Text>
       </View>
-      <View style={styles.container}>
+      <View style={styles.formContainer}>
         <Gap height={61} />
         <Text style={styles.TextInputTop}>Email</Text>
-        <TextInput placeholder="Masukan Email Anda" />
+        <TextInput
+          placeholder="Masukan Email Anda"
+          style={styles.input}
+          value={email}
+          onChangeText={setEmail}
+          autoCapitalize="none"
+          keyboardType="email-address"
+        />
         <Gap height={12} />
         <Text style={styles.TextInputTop}>Password</Text>
-        <TextInput placeholder="Masukan Password Anda" />
-        <Gap height={25} />
-        <Button
-          label="Masuk"
-          textColor="#E9EFEC"
-          onSubmit={() => navigation.navigate('Home')}
-          type={undefined}
-          icon={undefined}
+        <TextInput
+          placeholder="Masukan Password Anda"
+          style={styles.input}
+          secureTextEntry
+          value={password}
+          onChangeText={setPassword}
         />
+        <Gap height={25} />
+        <Button label="Masuk" textColor="#E9EFEC" onSubmit={handleLogin} />
         <Gap height={210} />
-        <ScrollView horizontal={true}>
+        <ScrollView horizontal>
           <Text style={styles.TextBottom}>Belum Punya Akun?</Text>
           <TouchableOpacity onPress={() => navigation.navigate('SignUp')}>
             <Text style={styles.TextBottomContainer}>SignUp</Text>
@@ -53,6 +84,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#16423C',
     height: 260,
   },
+  formContainer: {
+    paddingHorizontal: 32,
+  },
   TextHeader: {
     color: '#E9EFEC',
     fontSize: 29,
@@ -70,18 +104,29 @@ const styles = StyleSheet.create({
     color: '#0C120E',
     fontSize: 16,
     fontFamily: 'Poppins-Regular',
-    paddingLeft: 42,
+    paddingBottom: 6,
   },
-  TextBottomContainer: {
-    color: '#16423C',
-    fontSize: 15,
-    fontFamily: 'Poppins-SemiBold',
-    paddingLeft: 3,
+  input: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#BDBDBD',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 14,
+    color: '#000000',
+    marginBottom: 12,
   },
   TextBottom: {
     color: '#0C120E',
     fontSize: 15,
     fontFamily: 'Poppins-Regular',
-    paddingLeft: 101,
+    paddingLeft: 75,
+  },
+  TextBottomContainer: {
+    color: '#16423C',
+    fontSize: 15,
+    fontFamily: 'Poppins-SemiBold',
+    paddingLeft: 4,
   },
 });

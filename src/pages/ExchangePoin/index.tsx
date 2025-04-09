@@ -13,9 +13,9 @@ const Exchange = ({navigation}) => {
   const [vouchers, setVouchers] = useState([
     {
       id: 1,
-      title: 'Voucher Menginap di Vila',
+      title: 'Voucher Menginap Hotel',
       points: 100000,
-      stock: 16,
+      stock: 1,
     },
     {
       id: 2,
@@ -64,7 +64,7 @@ const Exchange = ({navigation}) => {
           <View key={voucher.id} style={styles.card}>
             <View style={styles.topContent}>
               <View style={styles.voucherInfo}>
-                <View style={styles.placeholder} />
+                {/* <View style={styles.placeholder} /> foto for voucher */}
 
                 <View style={{marginLeft: 16, flex: 1}}>
                   <Text style={styles.title}>{voucher.title}</Text>
