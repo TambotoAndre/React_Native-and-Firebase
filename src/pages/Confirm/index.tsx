@@ -6,11 +6,48 @@ import {
   Text,
   TouchableOpacity,
   Image,
+  Alert,
 } from 'react-native';
 import BACK from '../../assets/icon/ion_chevron-back.svg';
+import {doc, updateDoc, setDoc} from 'firebase/firestore';
+import {db} from '../../firebase';
 
 const Confirm = ({navigation, route}) => {
-  const {category, description, location, image} = route.params || {};
+  const {
+    id,
+    category,
+    description,
+    location,
+    image,
+    claimed,
+    username,
+    phoneNumber,
+  } = route.params || {};
+
+  const handleClaim = async () => {
+    try {
+      // Update field claimed menjadi true
+      const postRef = doc(db, 'posts', id);
+      await updateDoc(postRef, {claimed: true});
+
+      // Tambahkan ke koleksi "statuses" untuk keperluan Status.jsx
+      const statusRef = doc(db, 'statuses', id);
+      await setDoc(statusRef, {
+        postId: id,
+        username: username || 'Anonim',
+        description: description || '',
+        location: location || '',
+        phoneNumber: phoneNumber || '-',
+        status: 'pending',
+      });
+
+      Alert.alert('Sukses', 'Postingan berhasil diklaim!');
+      navigation.goBack(); // kembali ke Anorganic agar data berubah
+    } catch (error) {
+      console.error('Gagal klaim:', error);
+      Alert.alert('Error', 'Terjadi kesalahan saat mengklaim.');
+    }
+  };
 
   return (
     <ScrollView style={styles.container}>
@@ -20,14 +57,28 @@ const Confirm = ({navigation, route}) => {
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Konfirmasi</Text>
       </View>
+
       {/* Image Section */}
       <View style={styles.imageWrapper}>
-        {image && (
-          <Image source={image} style={styles.image} resizeMode="cover" />
+        {image ? (
+          <Image
+            source={{uri: image}}
+            style={styles.image}
+            resizeMode="cover"
+          />
+        ) : (
+          <View
+            style={[
+              styles.image,
+              {justifyContent: 'center', alignItems: 'center'},
+            ]}>
+            <Text style={{color: '#666'}}>Tidak ada gambar</Text>
+          </View>
         )}
       </View>
 
       <View style={styles.indicator} />
+
       {/* Info Section */}
       <View style={styles.content}>
         <View style={styles.categoryTag}>
@@ -35,21 +86,18 @@ const Confirm = ({navigation, route}) => {
         </View>
 
         <View style={styles.titleRow}>
-          <Text style={styles.title}>
-            {description ||
-              ' sbdjobdjsabdjasbdaojdboasbdaodbasojdosadjasbdjsobdjbdasjdbam '}
-          </Text>
+          <Text style={styles.title}>{description || '-'}</Text>
           <Text style={styles.weight}>1.5 kg</Text>
         </View>
 
-        <Text style={styles.description}>Lokasi: {location || 'Kleak'}</Text>
+        <Text style={styles.description}>Lokasi: {location || '-'}</Text>
       </View>
+
       {/* Claim Button */}
-      <TouchableOpacity
-        style={styles.button}
-        onPress={() => navigation.navigate('Home')}>
+      <TouchableOpacity style={styles.button} onPress={handleClaim}>
         <Text style={styles.buttonText}>Claim</Text>
       </TouchableOpacity>
+
       <View style={{height: 40}} />
     </ScrollView>
   );
@@ -87,6 +135,7 @@ const styles = StyleSheet.create({
   image: {
     width: '100%',
     height: 200,
+    backgroundColor: '#ccc',
   },
   indicator: {
     height: 5,
@@ -122,6 +171,8 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     color: '#16423C',
+    flex: 1,
+    paddingRight: 10,
   },
   weight: {
     fontSize: 14,

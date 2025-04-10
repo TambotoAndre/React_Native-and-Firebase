@@ -1,66 +1,121 @@
-import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { BackButton } from '../../assets/icon';
-import { Waste1, Waste2 } from '../../assets/Image/index';
-import { Shadow } from 'react-native-shadow-2';
-import React from 'react';
+import React, {useEffect, useState} from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Image,
+  ActivityIndicator,
+} from 'react-native';
+import {db} from '../../firebase';
+import {
+  collection,
+  query,
+  where,
+  onSnapshot,
+  getDoc,
+  doc,
+  updateDoc,
+} from 'firebase/firestore';
+import {Shadow} from 'react-native-shadow-2';
 
-const Status = ({ navigation }) => {
-  return (
-    <View style={styles.container}>
-      <View style={styles.statusButtonContainer}>
-        <TouchableOpacity
-          style={styles.BackButton}
-          onPress={() => navigation.goBack()}>
-          <BackButton />
-        </TouchableOpacity>
-        <Text style={styles.statusText}>Status</Text>
-      </View>
-      <View style={{ rowGap: 20 }}>
-        <View style={styles.listContainer}>
-          <Shadow distance={5} offset={[-2, 1]}>
-            <Image source={Waste1} style={styles.image} />
-          </Shadow>
-          <View style={styles.descriptionContainer}>
-            <Text style={styles.text} numberOfLines={2}>
-              Konfirmasi apakah Transaksi telah berhasil atau gagal.
-            </Text>
-            <Text style={styles.text}>Date: xx - xx - xxxx</Text>
-            <View style={styles.buttonContainer}>
-              <TouchableOpacity
-                style={[styles.button, { backgroundColor: '#FF0909' }]}>
-                <Text style={styles.buttonText}>Gagal</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.button, { backgroundColor: '#16423C' }]}>
-                <Text style={styles.buttonText}>Berhasil</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
+const Status = () => {
+  const [posts, setPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-        <View style={styles.listContainer}>
-          <Shadow distance={5} offset={[-2, 1]}>
-            <Image source={Waste2} style={styles.image} />
-          </Shadow>
-          <View style={styles.descriptionContainer}>
-            <Text style={styles.text} numberOfLines={2}>
-              Konfirmasi apakah Transaksi telah berhasil atau gagal.
-            </Text>
-            <Text style={styles.text}>Date: xx - xx - xxxx</Text>
-            <View style={styles.buttonContainer}>
-              <TouchableOpacity
-                style={[styles.button, { backgroundColor: '#FF0909' }]}>
-                <Text style={styles.buttonText}>Gagal</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.button, { backgroundColor: '#16423C' }]}>
-                <Text style={styles.buttonText}>Berhasil</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
+  useEffect(() => {
+    const q = query(collection(db, 'posts'), where('claimed', '==', true));
+
+    const unsubscribe = onSnapshot(q, async snapshot => {
+      const data = [];
+
+      for (const docSnap of snapshot.docs) {
+        const postData = docSnap.data();
+        const userDoc = await getDoc(doc(db, 'users', postData.userId));
+        const userData = userDoc.exists() ? userDoc.data() : {};
+
+        data.push({
+          id: docSnap.id,
+          username: userData.username || 'User',
+          phoneNumber: userData.phoneNumber || '-',
+          location: postData.location,
+          image: postData.image,
+          description: postData.description,
+          createdAt: postData.createdAt?.toDate().toLocaleDateString() || '',
+        });
+      }
+
+      setPosts(data);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  const handleGagal = async postId => {
+    try {
+      await updateDoc(doc(db, 'posts', postId), {
+        claimed: false,
+      });
+      console.log('Klaim dibatalkan.');
+    } catch (error) {
+      console.error('Error saat mengubah status:', error);
+    }
+  };
+
+  const handleBerhasil = async postId => {
+    try {
+      console.log('Klaim berhasil diproses.');
+    } catch (error) {
+      console.error('Error saat memproses klaim berhasil:', error);
+    }
+  };
+
+  const renderCard = item => (
+    <View key={item.id} style={styles.listContainer}>
+      <Shadow distance={5} offset={[-2, 1]}>
+        <Image source={{uri: item.image}} style={styles.image} />
+      </Shadow>
+      <View style={styles.descriptionContainer}>
+        <Text style={styles.text} numberOfLines={2}>
+          {item.description}
+        </Text>
+        <Text style={styles.text}>Date: {item.createdAt}</Text>
+        <View style={styles.buttonContainer}>
+          <TouchableOpacity
+            style={[styles.button, {backgroundColor: '#FF0909'}]}
+            onPress={() => handleGagal(item.id)}>
+            <Text style={styles.buttonText}>Gagal</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.button, {backgroundColor: '#16423C'}]}
+            onPress={() => handleBerhasil(item.id)}>
+            <Text style={styles.buttonText}>Berhasil</Text>
+          </TouchableOpacity>
         </View>
       </View>
     </View>
+  );
+
+  return (
+    <ScrollView style={styles.container}>
+      <Text style={styles.statusText}>Status</Text>
+      {loading ? (
+        <ActivityIndicator
+          size="large"
+          color="#16423C"
+          style={{marginTop: 30}}
+        />
+      ) : posts.length === 0 ? (
+        <Text style={{textAlign: 'center', marginTop: 30, color: '#555'}}>
+          Belum ada postingan yang diklaim.
+        </Text>
+      ) : (
+        posts.map(renderCard)
+      )}
+      <View style={{height: 40}} />
+    </ScrollView>
   );
 };
 
@@ -72,16 +127,12 @@ const styles = StyleSheet.create({
     padding: 20,
     rowGap: 30,
   },
-  statusButtonContainer: {
-    flexDirection: 'row',
-    columnGap: 10,
-    alignItems: 'center',
-  },
   statusText: {
-    marginLeft: 125,
     color: '#16423C',
     fontSize: 20,
     fontFamily: 'Poppins-Bold',
+    textAlign: 'center',
+    marginBottom: 20,
   },
   listContainer: {
     flexDirection: 'row',
@@ -90,6 +141,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1,
     borderColor: '#16423C',
+    padding: 10,
   },
   image: {
     width: 100,
