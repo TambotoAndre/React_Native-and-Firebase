@@ -11,7 +11,15 @@ import {
 } from 'react-native';
 import BACK from '../../assets/icon/ion_chevron-back.svg';
 import {auth, db} from '../../firebase';
-import {doc, updateDoc, setDoc, getDoc} from 'firebase/firestore';
+import {
+  doc,
+  updateDoc,
+  setDoc,
+  getDoc,
+  collection,
+  addDoc,
+  serverTimestamp,
+} from 'firebase/firestore';
 
 const Confirm = ({navigation, route}) => {
   const {
@@ -47,13 +55,35 @@ const Confirm = ({navigation, route}) => {
         return;
       }
 
-      // Update post with claimed and claimerId
+      // Get claimer’s username
+      const claimerRef = doc(db, 'users', currentUser.uid);
+      const claimerSnap = await getDoc(claimerRef);
+      if (!claimerSnap.exists()) {
+        Alert.alert('Error', 'Data pengguna tidak ditemukan.');
+        return;
+      }
+      const claimerUsername = claimerSnap.data().username || 'Anonim';
+
+      // Update post
       await updateDoc(postRef, {
         claimed: true,
         claimerId: currentUser.uid,
       });
+      console.log('Post updated:', id, 'claimerId:', currentUser.uid);
 
-      // Tambahkan ke koleksi "statuses" untuk keperluan Status.jsx
+      // Create notification
+      const postData = postSnap.data();
+      const ownerId = postData.userId;
+      const notificationRef = await addDoc(collection(db, 'notifications'), {
+        userId: ownerId,
+        claimerId: currentUser.uid,
+        postId: id,
+        message: `${claimerUsername} ingin mengambil barang yang anda posting`,
+        createdAt: serverTimestamp(),
+      });
+      console.log('Notification created:', notificationRef.id);
+
+      // Write to statuses
       const statusRef = doc(db, 'statuses', id);
       await setDoc(statusRef, {
         postId: id,
@@ -65,7 +95,7 @@ const Confirm = ({navigation, route}) => {
       });
 
       Alert.alert('Sukses', 'Postingan berhasil diklaim!');
-      navigation.goBack(); // Kembali ke Anorganic agar data berubah
+      navigation.goBack();
     } catch (error) {
       console.error('Gagal klaim:', error);
       Alert.alert(
@@ -83,8 +113,6 @@ const Confirm = ({navigation, route}) => {
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Konfirmasi</Text>
       </View>
-
-      {/* Image Section */}
       <View style={styles.imageWrapper}>
         {image ? (
           <Image
@@ -102,28 +130,23 @@ const Confirm = ({navigation, route}) => {
           </View>
         )}
       </View>
-
       <View style={styles.indicator} />
-
-      {/* Info Section */}
       <View style={styles.content}>
         <View style={styles.categoryTag}>
           <Text style={styles.categoryText}>{category || 'Tidak ada'}</Text>
         </View>
-
         <View style={styles.titleRow}>
           <Text style={styles.title}>{description || '-'}</Text>
           <Text style={styles.weight}>1.5 kg</Text>
         </View>
-
         <Text style={styles.description}>Lokasi: {location || '-'}</Text>
       </View>
-
-      {/* Claim Button */}
-      <TouchableOpacity style={styles.button} onPress={handleClaim}>
+      <TouchableOpacity
+        style={styles.button}
+        onPress={handleClaim}
+        disabled={claimed}>
         <Text style={styles.buttonText}>Claim</Text>
       </TouchableOpacity>
-
       <View style={{height: 40}} />
     </ScrollView>
   );

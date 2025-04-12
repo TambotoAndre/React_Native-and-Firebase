@@ -123,6 +123,7 @@ const Status = () => {
         transaction.update(ownerRef, {
           transaksi: increment(1),
           poin: increment(3),
+          postingan: increment(-1), // Decrease post count
         });
 
         // Update claimer: +1 transaksi, +5 poin
