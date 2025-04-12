@@ -61,6 +61,7 @@ const UploadId = ({navigation, route}) => {
                 location: location,
                 image: image,
                 createdAt: serverTimestamp(),
+                claimerId: null,
               };
 
               // Tambahkan postingan ke collection 'posts'

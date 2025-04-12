@@ -1,3 +1,4 @@
+/* eslint-disable prettier/prettier */
 import React from 'react';
 import {
   ScrollView,
@@ -9,8 +10,8 @@ import {
   Alert,
 } from 'react-native';
 import BACK from '../../assets/icon/ion_chevron-back.svg';
-import {doc, updateDoc, setDoc} from 'firebase/firestore';
-import {db} from '../../firebase';
+import {auth, db} from '../../firebase';
+import {doc, updateDoc, setDoc, getDoc} from 'firebase/firestore';
 
 const Confirm = ({navigation, route}) => {
   const {
@@ -26,9 +27,31 @@ const Confirm = ({navigation, route}) => {
 
   const handleClaim = async () => {
     try {
-      // Update field claimed menjadi true
+      const currentUser = auth.currentUser;
+      if (!currentUser) {
+        Alert.alert('Error', 'Kamu harus login untuk mengklaim postingan.');
+        return;
+      }
+
+      // Verify post exists
       const postRef = doc(db, 'posts', id);
-      await updateDoc(postRef, {claimed: true});
+      const postSnap = await getDoc(postRef);
+      if (!postSnap.exists()) {
+        Alert.alert('Error', 'Postingan tidak ditemukan.');
+        return;
+      }
+
+      // Check if already claimed
+      if (postSnap.data().claimed) {
+        Alert.alert('Error', 'Postingan sudah diklaim.');
+        return;
+      }
+
+      // Update post with claimed and claimerId
+      await updateDoc(postRef, {
+        claimed: true,
+        claimerId: currentUser.uid,
+      });
 
       // Tambahkan ke koleksi "statuses" untuk keperluan Status.jsx
       const statusRef = doc(db, 'statuses', id);
@@ -42,10 +65,13 @@ const Confirm = ({navigation, route}) => {
       });
 
       Alert.alert('Sukses', 'Postingan berhasil diklaim!');
-      navigation.goBack(); // kembali ke Anorganic agar data berubah
+      navigation.goBack(); // Kembali ke Anorganic agar data berubah
     } catch (error) {
       console.error('Gagal klaim:', error);
-      Alert.alert('Error', 'Terjadi kesalahan saat mengklaim.');
+      Alert.alert(
+        'Error',
+        'Terjadi kesalahan saat mengklaim: ' + error.message,
+      );
     }
   };
 

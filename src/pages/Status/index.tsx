@@ -8,8 +8,9 @@ import {
   TouchableOpacity,
   Image,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
-import {db} from '../../firebase';
+import {auth, db} from '../../firebase';
 import {
   collection,
   query,
@@ -18,6 +19,9 @@ import {
   getDoc,
   doc,
   updateDoc,
+  increment,
+  deleteDoc,
+  runTransaction,
 } from 'firebase/firestore';
 import {Shadow} from 'react-native-shadow-2';
 
@@ -44,6 +48,7 @@ const Status = () => {
           image: postData.image,
           description: postData.description,
           createdAt: postData.createdAt?.toDate().toLocaleDateString() || '',
+          completed: postData.completed || false,
         });
       }
 
@@ -58,18 +63,91 @@ const Status = () => {
     try {
       await updateDoc(doc(db, 'posts', postId), {
         claimed: false,
+        claimerId: null, // Reset claimer
       });
       console.log('Klaim dibatalkan.');
+      Alert.alert('Sukses', 'Klaim berhasil dibatalkan.');
     } catch (error) {
       console.error('Error saat mengubah status:', error);
+      Alert.alert('Error', 'Gagal membatalkan klaim: ' + error.message);
     }
   };
 
   const handleBerhasil = async postId => {
     try {
-      console.log('Klaim berhasil diproses.');
+      const currentUser = auth.currentUser;
+      if (!currentUser) {
+        Alert.alert('Error', 'Kamu harus login untuk memproses klaim.');
+        return;
+      }
+
+      // Run transaction to ensure atomicity
+      await runTransaction(db, async transaction => {
+        const postRef = doc(db, 'posts', postId);
+        const postSnap = await transaction.get(postRef);
+        if (!postSnap.exists()) {
+          throw new Error('Post tidak ditemukan.');
+        }
+        const postData = postSnap.data();
+
+        // Check if already completed
+        if (postData.completed) {
+          throw new Error('Transaksi sudah diproses.');
+        }
+
+        // Get user IDs
+        const ownerId = postData.userId;
+        const claimerId = postData.claimerId;
+
+        // Verify claimer
+        if (!claimerId) {
+          throw new Error('Tidak ada pengklaim untuk post ini.');
+        }
+        if (claimerId !== currentUser.uid) {
+          throw new Error('Kamu bukan pengklaim post ini.');
+        }
+
+        // Verify owner and claimer exist
+        const ownerRef = doc(db, 'users', ownerId);
+        const claimerRef = doc(db, 'users', claimerId);
+        const ownerSnap = await transaction.get(ownerRef);
+        const claimerSnap = await transaction.get(claimerRef);
+        if (!ownerSnap.exists()) {
+          throw new Error('Pemilik post tidak ditemukan.');
+        }
+        if (!claimerSnap.exists()) {
+          throw new Error('Pengklaim tidak ditemukan.');
+        }
+
+        // Update owner: +1 transaksi, +3 poin
+        transaction.update(ownerRef, {
+          transaksi: increment(1),
+          poin: increment(3),
+        });
+
+        // Update claimer: +1 transaksi, +5 poin
+        transaction.update(claimerRef, {
+          transaksi: increment(1),
+          poin: increment(5),
+        });
+
+        // Mark as completed
+        transaction.update(postRef, {completed: true});
+
+        // Delete post
+        transaction.delete(postRef);
+      });
+
+      console.log(
+        'Klaim berhasil diproses, transaksi dan poin bertambah untuk owner (+3) dan claimer (+5), post dihapus.',
+      );
+      Alert.alert(
+        'Sukses',
+        'Klaim berhasil diproses! Pemilik mendapat 3 poin, pengklaim mendapat 5 poin. Postingan dihapus.',
+      );
     } catch (error) {
       console.error('Error saat memproses klaim berhasil:', error);
+      Alert.alert('Error', 'Gagal memproses klaim: ' + error.message);
     }
   };
 
@@ -86,12 +164,14 @@ const Status = () => {
         <View style={styles.buttonContainer}>
           <TouchableOpacity
             style={[styles.button, {backgroundColor: '#FF0909'}]}
-            onPress={() => handleGagal(item.id)}>
+            onPress={() => handleGagal(item.id)}
+            disabled={item.completed}>
             <Text style={styles.buttonText}>Gagal</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.button, {backgroundColor: '#16423C'}]}
-            onPress={() => handleBerhasil(item.id)}>
+            onPress={() => handleBerhasil(item.id)}
+            disabled={item.completed}>
             <Text style={styles.buttonText}>Berhasil</Text>
           </TouchableOpacity>
         </View>
