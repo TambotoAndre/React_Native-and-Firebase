@@ -135,10 +135,10 @@ const Confirm = ({navigation, route}) => {
         <View style={styles.categoryTag}>
           <Text style={styles.categoryText}>{category || 'Tidak ada'}</Text>
         </View>
-        <View style={styles.titleRow}>
+        {/* <View style={styles.titleRow}>
           <Text style={styles.title}>{description || '-'}</Text>
           <Text style={styles.weight}>1.5 kg</Text>
-        </View>
+        </View> */}
         <Text style={styles.description}>Lokasi: {location || '-'}</Text>
       </View>
       <TouchableOpacity

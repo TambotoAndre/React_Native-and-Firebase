@@ -144,17 +144,17 @@ const Home = ({navigation}) => {
               <Text style={styles.Post}>Postingan</Text>
             </View>
             <View style={styles.batasStatus} />
-            <View style={styles.status}>
+            {/* <View style={styles.status}>
               <Text style={styles.dailyCleanedCount}>{transactionCount}</Text>
               <Text style={styles.dailyCleaned}>Kg/hari</Text>
-            </View>
+            </View> */}
           </View>
         </View>
         <TouchableOpacity
           style={styles.educationBanner}
           onPress={handleBannerPress}>
           <YoutubePlayer
-            height={160} // Match banner height
+            height={170} // Match banner height
             width={360} // Match banner width
             play={playingVideo} // Kontrol pemutaran berdasarkan state
             videoId="tVuNnac7m0o"
@@ -341,7 +341,7 @@ const styles = StyleSheet.create({
     fontSize: 10,
   },
   educationBanner: {
-    height: 160,
+    height: 170,
     width: 360,
     backgroundColor: '#6A9C89',
     marginTop: 16,
