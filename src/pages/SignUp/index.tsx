@@ -42,6 +42,7 @@ const SignUp = ({navigation}) => {
         transaksi: 0,
         postingan: 0,
         bobot: 0,
+        poin: 0,
       });
 
       Alert.alert('Berhasil', 'Akun berhasil dibuat!');

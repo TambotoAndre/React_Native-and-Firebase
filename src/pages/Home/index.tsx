@@ -1,4 +1,5 @@
-import React, {useEffect, useState} from 'react';
+/* eslint-disable prettier/prettier */
+import React, { useEffect, useState } from 'react';
 import {
   ScrollView,
   StyleSheet,
@@ -6,7 +7,7 @@ import {
   Text,
   TouchableOpacity,
 } from 'react-native';
-import {Gap} from '../../components';
+import { Gap } from '../../components';
 import Notif from '../../assets/icon/bell-notification.svg';
 import Location from '../../assets/icon/Location_Point.svg';
 import Logo from '../../assets/icon/ATS_LOGO.svg';
@@ -20,31 +21,79 @@ import BP3 from '../../assets/icon/NavPosting.svg';
 import BP4 from '../../assets/icon/NavStatus.svg';
 import BP5 from '../../assets/icon/NavProfil.svg';
 
-import {auth, db} from '../../firebase';
-import {doc, getDoc} from 'firebase/firestore';
+import { auth, db } from '../../firebase';
+import { doc, getDoc } from 'firebase/firestore';
 
-const Home = ({navigation}) => {
+const Home = ({ navigation }) => {
   const [username, setUsername] = useState('');
+  const [postCount, setPostCount] = useState(0);
+  const [transactionCount, setTransactionCount] = useState(0);
+  const [pointCount, setPointCount] = useState(0);
 
+  // Fetch username only once on mount
   useEffect(() => {
-    const fetchUserData = async () => {
+    const fetchUsername = async () => {
       const user = auth.currentUser;
       if (user) {
         try {
           const userDocRef = doc(db, 'users', user.uid);
           const userDocSnap = await getDoc(userDocRef);
           if (userDocSnap.exists()) {
-            const data = userDocSnap.data();
-            setUsername(data.username || '');
+            setUsername(userDocSnap.data().username || '');
+          } else {
+            console.log('User document does not exist');
           }
         } catch (error) {
-          console.log('Error fetching user data:', error);
+          console.error('Error fetching username:', error);
         }
       }
     };
 
-    fetchUserData();
+    fetchUsername();
   }, []);
+
+  // Fetch counters and refresh on focus
+  const fetchCounters = async () => {
+    const user = auth.currentUser;
+    if (user) {
+      try {
+        const userDocRef = doc(db, 'users', user.uid);
+        const userDocSnap = await getDoc(userDocRef);
+        if (userDocSnap.exists()) {
+          const data = userDocSnap.data();
+          setPostCount(data.postingan || 0);
+          setTransactionCount(data.transaksi || 0);
+          setPointCount(data.poin || 0);
+          console.log('Counters fetched:', {
+            postingan: data.postingan || 0,
+            transaksi: data.transaksi || 0,
+            poin: data.poin || 0,
+          });
+        } else {
+          console.log('User document does not exist');
+          setPostCount(0);
+          setTransactionCount(0);
+          setPointCount(0);
+        }
+      } catch (error) {
+        console.error('Error fetching counters:', error);
+        setPostCount(0);
+        setTransactionCount(0);
+        setPointCount(0);
+      }
+    }
+  };
+
+  // Initial fetch and refresh on focus
+  useEffect(() => {
+    fetchCounters(); // Initial fetch
+
+    const unsubscribe = navigation.addListener('focus', () => {
+      fetchCounters(); // Refresh counters on focus
+    });
+
+    return unsubscribe;
+  }, [navigation]);
 
   return (
     <View style={styles.container}>
@@ -68,7 +117,7 @@ const Home = ({navigation}) => {
           <Text style={styles.atspoint}>ATS Point</Text>
           <View style={styles.logo_nominal}>
             <Logo style={styles.logo} />
-            <Text style={styles.nominalpoint}>100.000</Text>
+            <Text style={styles.nominalpoint}>{pointCount}</Text>
           </View>
           <TouchableOpacity
             style={styles.tukarpointButton}
@@ -79,17 +128,17 @@ const Home = ({navigation}) => {
           </TouchableOpacity>
           <View style={styles.statusbar}>
             <View style={styles.status}>
-              <Text style={styles.transactionCount}>17</Text>
+              <Text style={styles.transactionCount}>{transactionCount}</Text>
               <Text style={styles.transaction}>Transaksi</Text>
             </View>
             <View style={styles.batasStatus} />
             <View style={styles.status}>
-              <Text style={styles.PostCount}>5</Text>
+              <Text style={styles.PostCount}>{postCount}</Text>
               <Text style={styles.Post}>Postingan</Text>
             </View>
             <View style={styles.batasStatus} />
             <View style={styles.status}>
-              <Text style={styles.dailyCleanedCount}>2</Text>
+              <Text style={styles.dailyCleanedCount}>{transactionCount}</Text>
               <Text style={styles.dailyCleaned}>Kg/hari</Text>
             </View>
           </View>

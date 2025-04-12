@@ -1,3 +1,4 @@
+/* eslint-disable prettier/prettier */
 import React, {useState} from 'react';
 import {View, Text, TouchableOpacity, StyleSheet, Image} from 'react-native';
 import {launchImageLibrary} from 'react-native-image-picker';
@@ -34,9 +35,13 @@ const UploadSi = ({navigation}) => {
         </TouchableOpacity>
         <Text style={styles.headText}>Postingan Baru</Text>
         <TouchableOpacity
-          onPress={() =>
-            navigation.navigate('UploadId', {image: selectedImage})
-          }>
+          onPress={() => {
+            if (!selectedImage) {
+              alert('Pilih gambar terlebih dahulu!');
+              return;
+            }
+            navigation.navigate('UploadId', {image: selectedImage});
+          }}>
           <Next style={styles.next} />
         </TouchableOpacity>
       </View>
