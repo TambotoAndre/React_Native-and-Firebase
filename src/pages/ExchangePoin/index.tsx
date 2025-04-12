@@ -8,45 +8,89 @@ import {
   ScrollView,
 } from 'react-native';
 import BACK from '../../assets/icon/ion_chevron-back.svg';
+import {auth, db} from '../../firebase';
+import {doc, updateDoc, getDoc} from 'firebase/firestore';
 
 const Exchange = ({navigation}) => {
   const [vouchers, setVouchers] = useState([
     {
       id: 1,
       title: 'Voucher Menginap Hotel',
-      points: 100000,
+      points: 1,
       stock: 1,
     },
     {
       id: 2,
       title: 'Voucher Hypermart',
-      points: 75000,
+      points: 1,
       stock: 5,
     },
     {
       id: 3,
       title: 'Voucher KFC',
-      points: 250000,
+      points: 1,
       stock: 1,
     },
 
     {
       id: 4,
       title: 'Voucher Lotte',
-      points: 150000,
+      points: 1,
       stock: 2,
     },
   ]);
 
-  const handleClaim = id => {
-    setVouchers(prev =>
-      prev.map(item =>
-        item.id === id && item.stock > 0
-          ? {...item, stock: item.stock - 1}
-          : item,
-      ),
-    );
-    Alert.alert('Berhasil', 'Voucher berhasil diklaim!');
+  const handleClaim = async id => {
+    const selectedVoucher = vouchers.find(v => v.id === id);
+
+    if (!selectedVoucher) {
+      Alert.alert('Error', 'Voucher tidak ditemukan');
+      return;
+    }
+
+    if (selectedVoucher.stock <= 0) {
+      Alert.alert('Stok Habis', 'Voucher ini sudah habis');
+      return;
+    }
+
+    try {
+      const user = auth.currentUser;
+      if (user) {
+        const userRef = doc(db, 'users', user.uid);
+        const userSnap = await getDoc(userRef);
+
+        if (userSnap.exists()) {
+          const currentPoints = userSnap.data().poin || 0;
+
+          // Cek apakah poin cukup
+          if (currentPoints < selectedVoucher.points) {
+            Alert.alert(
+              'Poin Tidak Cukup',
+              'Kamu tidak punya cukup poin untuk klaim voucher ini.',
+            );
+            return;
+          }
+
+          // Update poin di Firestore
+          const newPoints = currentPoints - selectedVoucher.points;
+          await updateDoc(userRef, {
+            poin: newPoints,
+          });
+
+          // Kurangi stok voucher secara lokal
+          setVouchers(prev =>
+            prev.map(item =>
+              item.id === id ? {...item, stock: item.stock - 1} : item,
+            ),
+          );
+
+          Alert.alert('Berhasil', 'Voucher berhasil diklaim!');
+        }
+      }
+    } catch (error) {
+      console.error('Gagal klaim voucher:', error);
+      Alert.alert('Error', 'Terjadi kesalahan saat klaim voucher');
+    }
   };
 
   return (
