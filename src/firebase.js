@@ -1,3 +1,4 @@
+/* eslint-disable prettier/prettier */
 // src/firebase.js
 
 // Import modular functions from Firebase

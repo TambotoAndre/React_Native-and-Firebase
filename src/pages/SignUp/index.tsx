@@ -1,3 +1,4 @@
+/* eslint-disable prettier/prettier */
 import React, {useState} from 'react';
 import {
   ScrollView,
@@ -38,6 +39,9 @@ const SignUp = ({navigation}) => {
         email: email,
         username: username,
         phoneNumber: phoneNumber,
+        transaksi: 0,
+        postingan: 0,
+        bobot: 0,
       });
 
       Alert.alert('Berhasil', 'Akun berhasil dibuat!');
