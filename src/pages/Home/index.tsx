@@ -1,5 +1,5 @@
 /* eslint-disable prettier/prettier */
-import React, { useEffect, useState } from 'react';
+import React, {useEffect, useState} from 'react';
 import {
   ScrollView,
   StyleSheet,
@@ -7,7 +7,7 @@ import {
   Text,
   TouchableOpacity,
 } from 'react-native';
-import { Gap } from '../../components';
+import {Gap} from '../../components';
 import Notif from '../../assets/icon/bell-notification.svg';
 import Location from '../../assets/icon/Location_Point.svg';
 import Logo from '../../assets/icon/ATS_LOGO.svg';
@@ -20,15 +20,17 @@ import BP2 from '../../assets/icon/NavSearch.svg';
 import BP3 from '../../assets/icon/NavPosting.svg';
 import BP4 from '../../assets/icon/NavStatus.svg';
 import BP5 from '../../assets/icon/NavProfil.svg';
+import YoutubePlayer from 'react-native-youtube-iframe';
 
-import { auth, db } from '../../firebase';
-import { doc, getDoc } from 'firebase/firestore';
+import {auth, db} from '../../firebase';
+import {doc, getDoc} from 'firebase/firestore';
 
-const Home = ({ navigation }) => {
+const Home = ({navigation}) => {
   const [username, setUsername] = useState('');
   const [postCount, setPostCount] = useState(0);
   const [transactionCount, setTransactionCount] = useState(0);
   const [pointCount, setPointCount] = useState(0);
+  const [playingVideo, setPlayingVideo] = useState(false); // State untuk kontrol pemutaran video
 
   // Fetch username only once on mount
   useEffect(() => {
@@ -95,6 +97,11 @@ const Home = ({ navigation }) => {
     return unsubscribe;
   }, [navigation]);
 
+  // Handle banner tap
+  const handleBannerPress = () => {
+    setPlayingVideo(!playingVideo); // Toggle play/pause
+  };
+
   return (
     <View style={styles.container}>
       <ScrollView>
@@ -143,8 +150,20 @@ const Home = ({ navigation }) => {
             </View>
           </View>
         </View>
-        <TouchableOpacity style={styles.educationBanner}>
-          <Text style={styles.education}>Education Banner</Text>
+        <TouchableOpacity
+          style={styles.educationBanner}
+          onPress={handleBannerPress}>
+          <YoutubePlayer
+            height={160} // Match banner height
+            width={360} // Match banner width
+            play={playingVideo} // Kontrol pemutaran berdasarkan state
+            videoId="tVuNnac7m0o"
+            onChangeState={event => {
+              if (event === 'ended') {
+                setPlayingVideo(false); // Hentikan pemutaran saat video selesai
+              }
+            }}
+          />
         </TouchableOpacity>
         <Gap height={15} />
         <Text style={styles.category}>Kategori</Text>
@@ -200,6 +219,7 @@ const Home = ({ navigation }) => {
 
 export default Home;
 
+// Styles tetap sama seperti sebelumnya
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -321,18 +341,12 @@ const styles = StyleSheet.create({
     fontSize: 10,
   },
   educationBanner: {
-    height: 110,
+    height: 160,
     width: 360,
     backgroundColor: '#6A9C89',
     marginTop: 16,
     borderRadius: 16,
-  },
-  education: {
-    color: '#16423C',
-    fontFamily: 'Poppins-Bold',
-    fontSize: 15,
-    marginLeft: 19,
-    marginTop: 68,
+    overflow: 'hidden', // Ensure video stays within bounds
   },
   category: {
     fontSize: 15,

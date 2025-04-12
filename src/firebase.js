@@ -9,13 +9,13 @@ import {getStorage} from 'firebase/storage';
 
 // Firebase configuration
 const firebaseConfig = {
-  apiKey: 'AIzaSyC4l7dTaNdf9MW46ZsHzNAhVuYs1bpiOhY',
-  authDomain: 'ats-auth-e96fe.firebaseapp.com',
-  projectId: 'ats-auth-e96fe',
-  storageBucket: 'ats-auth-e96fe.appspot.com', // ← diperbaiki (.app menjadi .com)
-  messagingSenderId: '775949750826',
-  appId: '1:775949750826:web:d36565f49fd6334cbb2953',
-  measurementId: 'G-NPP6N2BP5L',
+  apiKey: 'AIzaSyCxbZ2J1WrokOKie2zLqU_nAS2pcNmZIGM',
+  authDomain: 'ats-database-c766e.firebaseapp.com',
+  projectId: 'ats-database-c766e',
+  storageBucket: 'ats-database-c766e.firebasestorage.app',
+  messagingSenderId: '957560849453',
+  appId: '1:957560849453:web:024b62f21562c1c98a24a4',
+  measurementId: 'G-KT59VF7Q8F',
 };
 
 // Initialize Firebase
